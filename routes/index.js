@@ -198,10 +198,6 @@ router.post('/uploadFilesGeneric', upload.single('files'), function(req, res, ne
 
 router.post('/addNewWordpress', function(req, res, next) {
 
-	/*let data = req.body.authKey;  
-	let buff = new Buffer(data);  
-	let base64data = buff.toString('base64');*/
-
 	Wordpress
 	.create({
 		id: null,
@@ -231,6 +227,40 @@ router.post('/addNewWordpress', function(req, res, next) {
 	});
 });
 
+router.get('/getConnectedWpAccounts', function(req, res, next) {
+
+	Wordpress
+	.findAll({
+		attributes : ['id','api','name', 'meta','tags','categories','languageConversion','sourceLanguage'
+		,'destLanguage','appendSuffx','suffixList','titleFile','descFile']
+	})
+	.then(function(err, data) {
+		if (err) {
+			res.json(err);
+		} else {
+			res.json(data);
+		}
+	});
+
+});
+
+router.post('/deleteWPAccount', function(req, res, next) {
+
+	Wordpress
+	.destroy({
+		where : {
+			id : req.body.id
+		}
+	})
+	.then(function(err, data) {
+		if (err) {
+			res.json(err);
+		} else {
+			res.json(data);
+		}
+	});
+
+});
 
 router.get('/refreshStorageFiles', function(req, res, next) {
 
