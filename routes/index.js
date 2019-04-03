@@ -76,6 +76,33 @@ const UploadedFiles = sequelize.define('UploadedFiles', {
 });
 
 
+const Wordpress = sequelize.define('Wordpress', {
+	id: {
+		type : Sequelize.INTEGER,
+		primaryKey: true,
+		autoIncrement: true,
+	},
+	name: Sequelize.STRING,
+	api: Sequelize.STRING,
+	authorization: Sequelize.STRING,
+	meta: Sequelize.STRING,
+	accKey: Sequelize.STRING,
+	tags: Sequelize.STRING,
+	categories: Sequelize.STRING,
+	authorizationOriginal: Sequelize.STRING,
+	languageConversion: Sequelize.BOOLEAN,
+	sourceLanguage: Sequelize.STRING,
+	destLanguage: Sequelize.STRING,
+	appendSuffx: Sequelize.BOOLEAN,
+	suffixList: Sequelize.STRING,
+	titleFile: Sequelize.STRING,
+	descFile: Sequelize.STRING,
+	maxPostLimit: Sequelize.STRING,
+}, {
+	tableName: 'accounts',
+	timestamps: false
+});
+
 router.get('/addWordpress', function(req, res, next) {
 
 	res.render('index', { title: 'Express' });
@@ -169,6 +196,40 @@ router.post('/uploadFilesGeneric', upload.single('files'), function(req, res, ne
 });
 
 
+router.post('/addNewWordpress', function(req, res, next) {
+
+	/*let data = req.body.authKey;  
+	let buff = new Buffer(data);  
+	let base64data = buff.toString('base64');*/
+
+	Wordpress
+	.create({
+		id: null,
+		name: req.body.wpName,
+		api: req.body.apiURL,
+		authorization:  "Basic "+Buffer.from(req.body.authKey).toString('base64'),
+		meta: req.body.videoMeta,
+		accKey: "NA",
+		tags: req.body.tagList,
+		categories: req.body.catList,
+		authorizationOriginal: req.body.authKey,
+		languageConversion: req.body.languageIsRequired,
+		sourceLanguage: req.body.sourceLang,
+		destLanguage:req.body.destLang,
+		appendSuffx: req.body.suffixReq,
+		suffixList: req.body.suffixList,
+		titleFile: req.body.titleFile,
+		descFile: req.body.descFile,
+		maxPostLimit: "0",
+	})
+	.then(function(err, data) {
+		if (err) {
+			res.json(err);
+		} else {
+			res.json(data);
+		}
+	});
+});
 
 
 router.get('/refreshStorageFiles', function(req, res, next) {
