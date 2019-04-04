@@ -262,6 +262,30 @@ router.post('/deleteWPAccount', function(req, res, next) {
 
 });
 
+router.get('/getStorageFiles', function(req, res, next) {
+
+	sequelize.query("SELECT COUNT(*) as rows FROM `filelist` WHERE 1", { type: sequelize.QueryTypes.SELECT})
+	.then(count => {
+
+		console.log(req.query);
+
+		Files
+		.findAll({
+			limit : parseInt(req.query._limit), 
+			offset: parseInt(req.query._page)*10,
+			attributes: ['id', 'filename', 'bucketName', 'contentType','size']
+		})
+		.then(function(data,err) {
+			
+				res.setHeader('x-total-count', count[0].rows);
+				res.json(data);
+			
+		});
+
+	});
+
+});
+
 router.get('/refreshStorageFiles', function(req, res, next) {
 
 	GoogleAccounts
