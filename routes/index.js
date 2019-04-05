@@ -333,15 +333,22 @@ router.post('/addtoCrawlerQueue', function(req, res, next) {
 
 router.get('/getCrawlerQueue', function(req, res, next) {
 
-	CrawlerQueue
-	.findAll({
-	})
-	.then(function(data, err) {
-		if (err) {
-			res.json(err);
-		} else {
+	sequelize.query("SELECT COUNT(*) as rows FROM `crawlerqueue` WHERE 1", { type: sequelize.QueryTypes.SELECT})
+	.then(count => {
+
+		CrawlerQueue
+		.findAll({
+			limit : parseInt(req.query._limit), 
+			offset: req.query._page !=1 ? parseInt(req.query._page)*10 : 0,
+			attributes: ['id', 'url', 'crawler', 'wordpress','isProcessed', 'addedTime', 'completedTime','status']
+		})
+		.then(function(data,err) {
+			
+			res.setHeader('x-total-count', count[0].rows);
 			res.json(data);
-		}
+			
+		});
+
 	});
 
 });
@@ -358,7 +365,7 @@ router.get('/getStorageFiles', function(req, res, next) {
 		Files
 		.findAll({
 			limit : parseInt(req.query._limit), 
-			offset: parseInt(req.query._page)*10,
+			offset: req.query._page !=1 ? parseInt(req.query._page)*10 : 0,
 			attributes: ['id', 'filename', 'bucketName', 'contentType','size']
 		})
 		.then(function(data,err) {
