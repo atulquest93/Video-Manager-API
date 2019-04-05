@@ -75,6 +75,41 @@ const UploadedFiles = sequelize.define('UploadedFiles', {
 	timestamps: false
 });
 
+const Crawlers = sequelize.define('Crawlers', {
+	id: {
+		type : Sequelize.INTEGER,
+		primaryKey: true,
+		autoIncrement: true,
+	},
+	name: Sequelize.STRING,
+	isEmbedable: Sequelize.BOOLEAN,
+	websiteUrl: Sequelize.STRING,
+	sourceLang : Sequelize.STRING
+}, {
+	tableName: 'crawlers',
+	timestamps: false
+});
+
+const CrawlerQueue = sequelize.define('CrawlerQueue', {
+	id: {
+		type : Sequelize.INTEGER,
+		primaryKey: true,
+		autoIncrement: true,
+	},
+	url: Sequelize.STRING,
+	crawler: Sequelize.STRING,
+	wordpress: Sequelize.STRING,
+	storage : Sequelize.STRING,
+	isProcessed : Sequelize.BOOLEAN,
+	addedTime : Sequelize.STRING,
+	completedTime : Sequelize.STRING,
+	status : Sequelize.STRING
+}, {
+	tableName: 'crawlerqueue',
+	timestamps: false
+});
+
+
 
 const Wordpress = sequelize.define('Wordpress', {
 	id: {
@@ -103,11 +138,6 @@ const Wordpress = sequelize.define('Wordpress', {
 	timestamps: false
 });
 
-router.get('/addWordpress', function(req, res, next) {
-
-	res.render('index', { title: 'Express' });
-
-});
 
 router.post('/addGoogleAccounts', function(req, res, next) {
 
@@ -152,6 +182,20 @@ router.get('/getFiles', function(req, res, next) {
 		where : {
 			type : req.query.type
 		}
+	})
+	.then(function(err, data) {
+		if (err) {
+			res.json(err);
+		} else {
+			res.json(data);
+		}
+	});
+
+});
+
+router.get('/getCrawlers', function(req, res, next) {
+	Crawlers
+	.findAll({
 	})
 	.then(function(err, data) {
 		if (err) {
@@ -262,6 +306,48 @@ router.post('/deleteWPAccount', function(req, res, next) {
 
 });
 
+router.post('/addtoCrawlerQueue', function(req, res, next) {
+
+
+	CrawlerQueue
+	.create({
+		id : null,
+		url: req.body.videoUrl,
+		crawler: req.body.crawler,
+		wordpress: req.body.wordpress,
+		storage : req.body.storage,
+		isProcessed : false,
+		addedTime : new Date().toString(),
+		completedTime : " ",
+		status : "Pending"
+	})
+	.then(function(err, data) {
+		if (err) {
+			res.json(err);
+		} else {
+			res.json(data);
+		}
+	});
+
+});
+
+router.get('/getCrawlerQueue', function(req, res, next) {
+
+	CrawlerQueue
+	.findAll({
+	})
+	.then(function(data, err) {
+		if (err) {
+			res.json(err);
+		} else {
+			res.json(data);
+		}
+	});
+
+});
+
+
+
 router.get('/getStorageFiles', function(req, res, next) {
 
 	sequelize.query("SELECT COUNT(*) as rows FROM `filelist` WHERE 1", { type: sequelize.QueryTypes.SELECT})
@@ -277,8 +363,8 @@ router.get('/getStorageFiles', function(req, res, next) {
 		})
 		.then(function(data,err) {
 			
-				res.setHeader('x-total-count', count[0].rows);
-				res.json(data);
+			res.setHeader('x-total-count', count[0].rows);
+			res.json(data);
 			
 		});
 
