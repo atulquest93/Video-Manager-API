@@ -354,19 +354,29 @@ router.get('/getCrawlerQueue', function(req, res, next) {
 });
 
 
-
 router.get('/getStorageFiles', function(req, res, next) {
 
 	sequelize.query("SELECT COUNT(*) as rows FROM `filelist` WHERE 1", { type: sequelize.QueryTypes.SELECT})
 	.then(count => {
 
-		console.log(req.query);
+		const Op = Sequelize.Op;
 
 		Files
 		.findAll({
 			limit : parseInt(req.query._limit), 
 			offset: req.query._page !=1 ? parseInt(req.query._page)*10 : 0,
-			attributes: ['id', 'filename', 'bucketName', 'contentType','size']
+			attributes: ['id', 'filename', 'bucketName', 'contentType','size'],
+			where : {
+				bucketName : {
+					[Op.like]: '%'+(req.query.bucketName_like|| '')+'%',
+				},
+				fileName : {
+					[Op.like] : '%'+(req.query.filename_like || '')+'%',
+				},
+				contentType : {
+					[Op.like] : '%'+(req.query.contentType_like || '')+'%',
+				}
+			}
 		})
 		.then(function(data,err) {
 			
@@ -381,75 +391,100 @@ router.get('/getStorageFiles', function(req, res, next) {
 
 router.get('/refreshStorageFiles', function(req, res, next) {
 
-	GoogleAccounts
-	.findOne({
-		where : {
-			id : 15
-		}
-	})
-	.then(function(data, err) {
-		if (err) {
-			res.json(err);
-		} else {
-			console.log("Starter");
+	var storageId = req.query.id; 
 
-			var storage = Storage({keyFilename: "./config/"+data.fileName});
-			var bucket = data.bucketName;
-			var fileList = [];
+	sequelize.query("DELETE FROM `filelist` WHERE `bucketId` ="+storageId+"", { type: sequelize.QueryTypes.DELETE})
 
-			console.log("Start Fetching files ");
+	.then(data => {
 
-			storage
-			.bucket(bucket)
-			.getFiles()
-			.then(results => {
+		GoogleAccounts
+		.findOne({
+			where : {
+				id : storageId
+			}
+		})
+		.then(function(data, err) {
+			if (err) {
+				res.json(err);
+			} else {
 
-				var data = [];
-				const files = results[0];
-				files.forEach(file => {
-					fileList.push({
-						id : null,
-						website : '',
-						hotLinkUrl : '',
-						bucketName : bucket,
-						type : '',
-						bucketId : 13,
-						filename : file.name,
-						hierarchyLevel : file.name.split("/").length - 1,
-						status : 'ACTIVE',
-						contentType : file.metadata.contentType,
-						size : file.metadata.size,
-						createdOn : file.metadata.timeCreated
+				console.log("Starter");
+
+				var storage = Storage({keyFilename: "./config/"+data.fileName});
+				var bucket = data.bucketName;
+
+				console.log(data.bucketName);
+
+				var fileList = [];
+
+				console.log("Start Fetching files ");
+
+				storage
+				.bucket(bucket)
+				.getFiles()
+				.then(results => {
+
+					var data = [];
+					const files = results[0];
+
+					console.log("Files Received : "+files.length);
+
+					files.forEach(file => {
+						fileList.push({
+							id : null,
+							website : '',
+							hotLinkUrl : '',
+							bucketName : bucket,
+							type : '',
+							bucketId : storageId,
+							filename : file.name,
+							hierarchyLevel : file.name.split("/").length - 1,
+							status : 'ACTIVE',
+							contentType : file.metadata.contentType,
+							size : file.metadata.size,
+							createdOn : file.metadata.timeCreated
+						});
 					});
+
+					console.log(fileList.size);
+
+					var size = 500; var arrayOfArrays = [];
+					for (var i=0; i<fileList.length; i+=size) {
+						arrayOfArrays.push(fileList.slice(i,i+size));
+					}
+
+					console.log(arrayOfArrays);
+
+					arrayOfArrays.forEach(function(item){
+
+						Files
+						.bulkCreate(item)
+						.then(function(err, GoogleAccounts) {
+							console.log("Insert Success");
+						});
+
+					})
+
+					res.json({status : "Completed Second"});
+
+				})
+				.catch(err => {
+					console.error('ERROR:', err);
 				});
 
+			}
+		});
 
-				console.log(fileList.length);
-
-				var size = 500; var arrayOfArrays = [];
-				for (var i=0; i<fileList.length; i+=size) {
-					arrayOfArrays.push(fileList.slice(i,i+size));
-				}
-				console.log(arrayOfArrays);
-
-				arrayOfArrays.forEach(function(item){
-					Files
-					.bulkCreate(item)
-					.then(function(err, GoogleAccounts) {
-					});
-				})
-
-				res.json({status : "Completed"});
-
-			})
-			.catch(err => {
-				console.error('ERROR:', err);
-			});
-
-		}
 	});
 
+	
 });
+
+
+function refreshStorage(storageId, res){
+
+
+}
 
 
 module.exports = router;
