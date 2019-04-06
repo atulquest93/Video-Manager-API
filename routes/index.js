@@ -276,7 +276,7 @@ router.get('/getConnectedWpAccounts', function(req, res, next) {
 	Wordpress
 	.findAll({
 		attributes : ['id','api','name', 'meta','tags','categories','languageConversion','sourceLanguage'
-		,'destLanguage','appendSuffx','suffixList','titleFile','descFile']
+		,'destLanguage','appendSuffx','suffixList','titleFile','descFile', 'maxPostLimit']
 	})
 	.then(function(err, data) {
 		if (err) {
@@ -295,6 +295,28 @@ router.post('/deleteWPAccount', function(req, res, next) {
 		where : {
 			id : req.body.id
 		}
+	})
+	.then(function(err, data) {
+		if (err) {
+			res.json(err);
+		} else {
+			res.json(data);
+		}
+	});
+
+});
+
+router.post('/updateWordpress', function(req, res, next) {
+
+	Wordpress
+	.update({
+		maxPostLimit : req.body.limit
+	},{
+		where : {
+			id : req.body.id
+		},
+		returning: true,
+		plain: true
 	})
 	.then(function(err, data) {
 		if (err) {
