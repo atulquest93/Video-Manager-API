@@ -522,7 +522,7 @@ router.get('/initQueue', function(req, res, next) {
 
 
 
-	var url = 'https://www.xvideos.com/video5608419/';
+	var url = 'http://';
 	var options = ['--username=xxx', '--password=xxx'];
 	youtubedl.getInfo(url, options, function(err, info) {
 		if (err) throw err;
