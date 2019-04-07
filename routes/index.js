@@ -507,7 +507,10 @@ router.get('/refreshStorageFiles', function(req, res, next) {
 
 
 router.get('/initQueue', function(req, res, next) {
-	/*CrawlerQueue
+
+	var core = {};
+
+	CrawlerQueue
 	.findOne({
 		where : {
 			isProcessed : false,
@@ -516,19 +519,40 @@ router.get('/initQueue', function(req, res, next) {
 	})
 	.then(function(data,err) {
 
-		res.json(data);
+		Wordpress
+		.findOne({
+			where : {
+				name : data.wordpress
+			}
+		})
+		.then(function(wp, err) {
+			
+			core.wordpress = wp;
+			core.queue = data;
+			var url = data.url;
+			var options = ['--username=xxx', '--password=xxx'];
+			youtubedl.getInfo(url, options, function(err, info) {
+				if (err) throw err;
+				core.crawled = {
+					fulltitle : info.fulltitle,
+					url :info.url,
+					_filename : info._filename,
+					thumbnail : info.thumbnail,
+					webpage_url : info.webpage_url
+				};
+				res.json(core);
+			});
 
-	});*/
+		});
 
 
+		
 
-	var url = 'http://';
-	var options = ['--username=xxx', '--password=xxx'];
-	youtubedl.getInfo(url, options, function(err, info) {
-		if (err) throw err;
-
-		res.json(info);
 	});
+
+
+
+	
 	
 
 });
