@@ -1,5 +1,9 @@
 var express = require('express');
 var router = express.Router();
+
+const fs = require('fs');
+const youtubedl = require('@microlink/youtube-dl');
+
 const  Storage  = require('@google-cloud/storage');
 
 
@@ -83,8 +87,7 @@ const Crawlers = sequelize.define('Crawlers', {
 	},
 	name: Sequelize.STRING,
 	isEmbedable: Sequelize.BOOLEAN,
-	websiteUrl: Sequelize.STRING,
-	sourceLang : Sequelize.STRING
+	websiteUrl: Sequelize.STRING
 }, {
 	tableName: 'crawlers',
 	timestamps: false
@@ -503,10 +506,33 @@ router.get('/refreshStorageFiles', function(req, res, next) {
 });
 
 
-function refreshStorage(storageId, res){
+router.get('/initQueue', function(req, res, next) {
+	/*CrawlerQueue
+	.findOne({
+		where : {
+			isProcessed : false,
+			status : "Pending"
+		}
+	})
+	.then(function(data,err) {
+
+		res.json(data);
+
+	});*/
 
 
-}
+
+	var url = 'https://www.xvideos.com/video5608419/';
+	var options = ['--username=xxx', '--password=xxx'];
+	youtubedl.getInfo(url, options, function(err, info) {
+		if (err) throw err;
+
+		res.json(info);
+	});
+	
+
+});
+
 
 
 module.exports = router;
