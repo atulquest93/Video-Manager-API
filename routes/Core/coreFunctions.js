@@ -51,8 +51,9 @@ functions.generateTitle = function(obj, callback){
 		}).on('end', function() { 
 			de = data.split("\n");
 			desc += de[~~(de.length * Math.random())]+" ";
-
-			callback({title : title, description : desc});
+			var dataGenerated = { title : title, description : desc };
+			
+			callback(dataGenerated);
 		});
 
 	});

@@ -542,10 +542,17 @@ router.get('/initQueue', function(req, res, next) {
 				};
 			});*/
 
-			var textConfig = {
+
+			/*
+			//Generate Title
+			var obj = {
 				titleFile : core.wordpress.titleFile,
 				descFile : core.wordpress.descFile,
 			};
+			var x = functions.generateTitle(obj, function(x){
+				res.json(x);
+			});*/
+			
 
 
 				//convert Titles
