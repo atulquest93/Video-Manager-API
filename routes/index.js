@@ -1,11 +1,10 @@
 var express = require('express');
 var router = express.Router();
+const functions = require('./Core/coreFunctions');
 
 const fs = require('fs');
 const youtubedl = require('@microlink/youtube-dl');
-
 const  Storage  = require('@google-cloud/storage');
-
 
 const Sequelize = require('sequelize');
 const config = require("./../config/config.json");
@@ -529,7 +528,8 @@ router.get('/initQueue', function(req, res, next) {
 			
 			core.wordpress = wp;
 			core.queue = data;
-			var url = data.url;
+
+			/*var url = data.url;
 			var options = ['--username=xxx', '--password=xxx'];
 			youtubedl.getInfo(url, options, function(err, info) {
 				if (err) throw err;
@@ -540,10 +540,26 @@ router.get('/initQueue', function(req, res, next) {
 					thumbnail : info.thumbnail,
 					webpage_url : info.webpage_url
 				};
-				res.json(core);
-			});
+			});*/
 
-		});
+			var textConfig = {
+				titleFile : core.wordpress.titleFile,
+				descFile : core.wordpress.descFile,
+			};
+
+
+				//convert Titles
+				/*functions.convert({
+					source : 'en',
+					target : 'hi',
+					data : core.crawled.fulltitle
+				});*/
+
+
+				//res.json(core);
+
+
+			});
 
 
 		
