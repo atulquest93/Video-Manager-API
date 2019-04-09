@@ -3,7 +3,6 @@ var router = express.Router();
 const functions = require('./Core/coreFunctions');
 
 const fs = require('fs');
-const youtubedl = require('@microlink/youtube-dl');
 const  Storage  = require('@google-cloud/storage');
 
 const Sequelize = require('sequelize');
@@ -529,44 +528,46 @@ router.get('/initQueue', function(req, res, next) {
 			core.wordpress = wp;
 			core.queue = data;
 
-			/*var url = data.url;
-			var options = ['--username=xxx', '--password=xxx'];
-			youtubedl.getInfo(url, options, function(err, info) {
-				if (err) throw err;
-				core.crawled = {
-					fulltitle : info.fulltitle,
-					url :info.url,
-					_filename : info._filename,
-					thumbnail : info.thumbnail,
-					webpage_url : info.webpage_url
-				};
-			});*/
+			GoogleAccounts.findOne({
+				where : {
+					name : core.queue.storage
+				}
+			}).then(function(storage, error){
+				core.storage = storage;
 
-
-			/*
-			//Generate Title
-			var obj = {
-				titleFile : core.wordpress.titleFile,
-				descFile : core.wordpress.descFile,
-			};
-			var x = functions.generateTitle(obj, function(x){
-				res.json(x);
-			});*/
-			
-
-
-				//convert Titles
-				/*functions.convert({
-					source : 'en',
-					target : 'hi',
-					data : core.crawled.fulltitle
-				});*/
-
-
-				//res.json(core);
-
+				res.json(core);
 
 			});
+
+			/*functions.crawlWebsite({
+				url : data.url
+			}, function(data){
+
+				//cralwer data
+
+			});*/
+
+			/*functions.generateTitle({
+				titleFile : core.wordpress.titleFile,
+				descFile : core.wordpress.descFile,
+			}, function(data){
+				
+				//auto generated titles & Desc data;
+
+			});*/
+			
+			/*functions.convert({
+				source : 'en',
+				target : 'hi',
+				data : core.crawled.fulltitle
+			}, function(data){
+
+				//conversion data
+
+			});*/
+
+
+		});
 
 
 		
