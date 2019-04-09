@@ -128,7 +128,38 @@ functions.downloadVideo = function(data, callback){
 };
 
 functions.downloadImage = function(data, callback){
+	
+	/* 
+	 * Function to download Image to Server.
+	 * @Params { proxyType : 'http', ip, port, imageURL, fileName  }
+	 */
 
+	var proxyUrl = data.proxyType+"://"+ data.ip + ":" + data.port;
+
+	var proxiedRequest = request.defaults({
+		'proxy': proxyUrl
+	});
+
+	progress(proxiedRequest(data.imageURL ), {
+	})
+	.on('progress', function (state) {
+
+	})
+	.on('error', function (err) {
+		callback({
+			status : "error", 
+			operation: "download-image",
+		});
+	})
+	.on('end', function (state) {
+		callback({
+			status : "success", 
+			operation: "download-image",
+			name : data.fileName
+		});
+	})
+	.pipe(fs.createWriteStream('./../download/'+data.fileName));
+	
 };
 
 functions.uploadToStorage = function(data, callback){
@@ -176,10 +207,7 @@ functions.makePublic = function(data, callback){
 	 var filename = folderName + "/" + data.downloadFileName;
 
 
-	 storage
-	 .bucket(bucketName)
-	 .file(filename)
-	 .makePublic()
+	 storage.bucket(bucketName).file(filename).makePublic()
 	 .then(() => {
 	 	callback({
 	 		name : filename
@@ -224,6 +252,60 @@ functions.wpUploadImage = function(data, callback){
 
 functions.wpCreatePost = function(data, callback){
 
+	/* 
+	 * Function to create post on selected Wordpress
+	 * @Params { tags, categories, isSuffixed, suffixList, 
+	 * title, content, featured_media, api, authorization   }
+	 */
+
+	var tags = data.tags;
+	for(i=0;i<30;i++){
+		tags = tags + "," + Math.floor(Math.random()*data.tags.length);
+	}
+
+	var tagArray = tags.split(",").slice().splice(1, tags.split(",").length);
+
+	var categories = data.categories;
+	for(i=0;i<30;i++){
+		categories = categories + "," + Math.floor(Math.random()*data.categories.length;
+	}
+
+	var catArray = categories.split(",").slice().splice(1, categories.split(",").length);
+
+	var isSuffixed = data.isSuffixed;
+	
+	if(isSuffixed){
+		var words = data.suffixList;
+		var selected = words[Math.floor(Math.random()*words.length)];
+		data.title = data.title+" - "+selected;
+	}
+
+	var data = {
+		title : data.title,
+		content : data.content,
+		featured_media : data.featured_media,
+		format: "video",
+		status: "publish",
+	  	tags : tagArray[0] == 0 ? [] : tagArray, //[1,2,3,4,5]
+	  	categories: catArray[0] == 0 ? [] : catArray //[12,3,4,5,]
+	  };
+
+	  request({
+	  	url: data.api+'/posts',
+	  	headers: {
+	  		'cache-control': 'no-cache',
+	  		'Content-Type' : 'application/x-www-form-urlencoded',
+	  		'authorization' : data.authorization
+	  	},
+	  	form: data,
+	  	method: 'POST'
+	  }, (error, response, body) => {
+	  	if (error) {
+	  		console.log(error);
+	  	} else {
+	  		callback(JSON.parse(response.body.toString()));
+	  	}
+	  });
 };
 
 functions.wpCreateEmbed = function(data, callback){
