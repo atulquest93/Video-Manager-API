@@ -48,3 +48,4 @@ Thumbs.db
 #nodemodules
 /node_modules
 /config
+/download

@@ -3,7 +3,6 @@ const fs = require('fs');
 const path = require('path');
 const youtubedl = require('@microlink/youtube-dl');
 const  Storage  = require('@google-cloud/storage');
-var request = require('request');
 var progress = require('request-progress');
 
 var functions = {};
@@ -110,15 +109,15 @@ functions.downloadVideo = function(data, callback){
 	.on('progress', function (state) {
 		console.log('progress', state);
 		state.status = "progress"
-		fs.writeFile('./../download/'+data.fileName+".json", JSON.stringify(state), 'utf8', function(){});
+		fs.writeFile('./download/'+data.fileName+".json", JSON.stringify(state), 'utf8', function(){});
 	})
 	.on('error', function (err) {
-		fs.writeFile('./../download/'+data.fileName+".json", JSON.stringify({status : "Error"}), 'utf8', function(){});
+		fs.writeFile('./download/'+data.fileName+".json", JSON.stringify({status : "Error"}), 'utf8', function(){});
 	})
 	.on('end', function (state) {
-		fs.writeFile('./../download/'+data.fileName+".json", JSON.stringify({status : "End"}), 'utf8', function(){});
+		fs.writeFile('./download/'+data.fileName+".json", JSON.stringify({status : "End"}), 'utf8', function(){});
 	})
-	.pipe(fs.createWriteStream('./../download/'+data.fileName));
+	.pipe(fs.createWriteStream('./download/'+data.fileName));
 
 	callback({
 		status : "success", 
@@ -140,12 +139,13 @@ functions.downloadImage = function(data, callback){
 		'proxy': proxyUrl
 	});
 
-	progress(proxiedRequest(data.imageURL ), {
+	progress(request(data.imageURL ), {
 	})
 	.on('progress', function (state) {
 
 	})
 	.on('error', function (err) {
+		console.log(err);
 		callback({
 			status : "error", 
 			operation: "download-image",
@@ -158,7 +158,7 @@ functions.downloadImage = function(data, callback){
 			name : data.fileName
 		});
 	})
-	.pipe(fs.createWriteStream('./../download/'+data.fileName));
+	.pipe(fs.createWriteStream('./download/'+data.fileName));
 	
 };
 
@@ -170,10 +170,10 @@ functions.uploadToStorage = function(data, callback){
 	 *
 	 */
 
-	 var storage = Storage({keyFilename: "./../config/"+data.fileName});
+	 var storage = Storage({keyFilename: "./config/"+data.fileName});
 	 var bucketName = data.bucketName;
 
-	 var fileName = "./../download/" + data.downloadFileName;
+	 var fileName = "./download/" + data.downloadFileName;
 	 var serverFolder = data.folderName + "/" + data.downloadFileName;
 
 
@@ -267,7 +267,7 @@ functions.wpCreatePost = function(data, callback){
 
 	var categories = data.categories;
 	for(i=0;i<30;i++){
-		categories = categories + "," + Math.floor(Math.random()*data.categories.length;
+		categories = categories + "," + Math.floor(Math.random()*data.categories.length);
 	}
 
 	var catArray = categories.split(",").slice().splice(1, categories.split(",").length);
@@ -313,11 +313,11 @@ functions.wpCreateEmbed = function(data, callback){
 	/* 
 	 * Function to Create Embed corresponding to particular post.
 	 * @Params { meta, api, postId, authorization, baseDomain : 'https://foo.bar'
-	 * postId, gcId, videoFileName }
+	 * postId, gcId, videoFileName, crawlDomain }
 	 */
 
 	if(req.body.gcId == 1024){
-		var base = data.baseDomain+"/grabber/nonHostedPlayer.php?server=pornhub&id="+data.videoFileName;
+		var base = data.baseDomain+"/grabber/nonHostedPlayer.php?server="+crawlDomain+"&id="+data.videoFileName;
 	}else{
 		var base = data.baseDomain+"/grabber/init.php?id="+data.postId+"&bucket="+data.gcId+"&file="+data.videoFileName;
 	}
