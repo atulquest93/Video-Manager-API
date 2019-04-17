@@ -362,7 +362,8 @@ router.post('/addtoCrawlerQueue', function(req, res, next) {
 		isProcessed : false,
 		addedTime : new Date().toString(),
 		completedTime : " ",
-		status : "Pending"
+		status : "Pending",
+		fileName : req.body.fileName
 	})
 	.then(function(err, data) {
 		if (err) {
@@ -384,6 +385,28 @@ router.get('/getCrawlerQueue', function(req, res, next) {
 			limit : parseInt(req.query._limit), 
 			offset: req.query._page !=1 ? parseInt(req.query._page)*10 : 0,
 			attributes: ['id', 'url', 'crawler', 'wordpress','isProcessed', 'addedTime', 'completedTime','status']
+		})
+		.then(function(data,err) {
+			
+			res.setHeader('x-total-count', count[0].rows);
+			res.json(data);
+			
+		});
+
+	});
+
+});
+
+router.get('/getAutoPosts', function(req, res, next) {
+
+	sequelize.query("SELECT COUNT(*) as rows FROM `posts` WHERE 1", { type: sequelize.QueryTypes.SELECT})
+	.then(count => {
+
+		Posts
+		.findAll({
+			limit : parseInt(req.query._limit), 
+			offset: req.query._page !=1 ? parseInt(req.query._page)*10 : 0,
+			attributes: ['id', 'postedTo', 'crawler', 'storage','originalUrl', 'imageUrl', 'videoUrl']
 		})
 		.then(function(data,err) {
 			
@@ -537,29 +560,45 @@ router.get('/initQueue', function(req, res, next) {
 	})
 	.then(function(data,err) {
 
-		Wordpress
-		.findOne({
-			where : {
-				name : data.wordpress
-			}
-		})
-		.then(function(wp, err) {
-			
-			core.wordpress = wp;
-			core.queue = data;
+		if(data.fileName.length == 0){
 
-			GoogleAccounts.findOne({
+			CrawlerQueue
+			.destroy({
 				where : {
-					name : core.queue.storage
+					id : data.id
 				}
-			}).then(function(storage, error){
+			})
+			.then(function(data, err) {
+				res.json(data);
+			});
 
-				core.storage = storage;
-				crawlWebsite(core, res);
+		}else{
+			Wordpress
+			.findOne({
+				where : {
+					name : data.wordpress
+				}
+			})
+			.then(function(wp, err) {
+
+				core.wordpress = wp;
+				core.queue = data;
+
+				GoogleAccounts.findOne({
+					where : {
+						name : core.queue.storage
+					}
+				}).then(function(storage, error){
+
+					core.storage = storage;
+					crawlWebsite(core, res);
+
+				});
 
 			});
-			
-		});
+		}
+
+		
 	});
 });
 
@@ -742,5 +781,23 @@ function wpCreateEmbed(core,res){
 	});
 };
 
+var cron = require('cron');
+var postJob = cron.job("*/10 * * * *", function(){
+	console.log('Starting Cron Execution');
+	var server = "http://127.0.0.1:3001";
+	request({
+		url: server+"/initQueue",
+		method: 'GET',
+	}, (error, response, body) => {
+		if (error) {
+			console.log(error);
+		} else {
+			var elem = JSON.parse(response.body.toString());
+			console.log(elem);
+		}
+	});
+
+	console.log('Cron Completed !');
+}); 
 
 module.exports = router;
