@@ -100,7 +100,7 @@ functions.convert = function(data, callback){
 	 	const puppeteer = require('puppeteer');
 	 	var proxy = "" ;
 	 	if(data.useProxy){
-			proxy = "--proxy-server="+data.proxyIp+":"+data.proxyPort;
+	 		proxy = "--proxy-server="+data.proxyIp+":"+data.proxyPort;
 	 	}
 	 	
 
@@ -114,50 +114,50 @@ functions.convert = function(data, callback){
 
 	 		await page.setRequestInterception(true)
 
-		page.on('request', request => {
+	 		page.on('request', request => {
 
-			if (request.resourceType() === 'image')
-				request.abort();
-			else
-				request.continue();
-		});
+	 			if (request.resourceType() === 'image')
+	 				request.abort();
+	 			else
+	 				request.continue();
+	 		});
 
-		if(data.type == "porno365.sex"){
+	 		
 
-			url = await page.evaluate(() => {
+	 		url = await page.evaluate(() => {
 
-				return x = {
-					downloadURL : document.getElementsByClassName("download_ul")[0].children[1].children[0].attributes.href.value || " ",
-					title : document.getElementsByTagName("H1")[0].innerText || " ",
-					iframe : "NA",
-					description : document.getElementsByClassName("story_desription")[0].innerText || " ",
-					imageURL : thumb
-				};
-			});
+	 			return x = {
+	 				downloadURL : document.getElementsByClassName("download_ul")[0].children[1].children[0].attributes.href.value || " ",
+	 				title : document.getElementsByTagName("H1")[0].innerText || " ",
+	 				iframe : "NA",
+	 				description : document.getElementsByClassName("story_desription")[0].innerText || " ",
+	 				imageURL : thumb
+	 			};
+	 		});
 
-		}
-		await browser.close();
-
-
-		callback({
-			fulltitle : url.title,
-			url :url.downloadURL,
-			_filename : data.fileName,
-			thumbnail : url.imageURL,
-			webpage_url : data.url
-		});
-
-	})();
-
-}
+	 		
+	 		await browser.close();
 
 
+	 		callback({
+	 			fulltitle : url.title,
+	 			url :url.downloadURL,
+	 			_filename : data.fileName,
+	 			thumbnail : url.imageURL,
+	 			webpage_url : data.url
+	 		});
+
+	 	})();
+
+	 }
 
 
 
-}
 
-functions.downloadVideo = function(data, callback){
+
+	}
+
+	functions.downloadVideo = function(data, callback){
 
 	/* 
 	 * Function to downloadVideo to server 
