@@ -77,26 +77,87 @@ functions.convert = function(data, callback){
 
 	/* 
 	 * Function to crawl website to generate Image , Video URL, Title.
-	 * @Params { url : 'http://www.google.com'  }
+	 * @Params { url : 'http://www.google.com', proxyIp, proxyPort , fileName, type, useProxy }
 	 *
 	 */
 
-	 var url = data.url;
-	 var options = ['--username=xxx', '--password=xxx'];
-	 youtubedl.getInfo(url, options, function(err, info) {
-	 	if (err) throw err;
-	 	callback({
-	 		fulltitle : info.fulltitle,
-	 		url :info.url,
-	 		_filename : info._filename,
-	 		thumbnail : info.thumbnail,
-	 		webpage_url : info.webpage_url
+	 if(data.type == "youtube-dl"){
+	 	var url = data.url;
+	 	var options = ['--username=xxx', '--password=xxx'];
+	 	youtubedl.getInfo(url, options, function(err, info) {
+	 		if (err) throw err;
+	 		callback({
+	 			fulltitle : info.fulltitle,
+	 			url :info.url,
+	 			_filename : info._filename,
+	 			thumbnail : info.thumbnail,
+	 			webpage_url : info.webpage_url
+	 		});
 	 	});
-	 });
+	 	
+	 }else if(data.type == "chrome"){
 
-	}
+	 	const puppeteer = require('puppeteer');
+	 	var proxy = "" ;
+	 	if(data.useProxy){
+			proxy = "--proxy-server="+data.proxyIp+":"+data.proxyPort;
+	 	}
+	 	
 
-	functions.downloadVideo = function(data, callback){
+	 	(async () => {
+	 		
+	 		const browser = await puppeteer.launch({args: ['--no-sandbox', proxy]});
+	 		
+	 		const page = await browser.newPage();
+	 		await page.goto(data.url);
+	 		var url = {};
+
+	 		await page.setRequestInterception(true)
+
+		page.on('request', request => {
+
+			if (request.resourceType() === 'image')
+				request.abort();
+			else
+				request.continue();
+		});
+
+		if(data.type == "porno365.sex"){
+
+			url = await page.evaluate(() => {
+
+				return x = {
+					downloadURL : document.getElementsByClassName("download_ul")[0].children[1].children[0].attributes.href.value || " ",
+					title : document.getElementsByTagName("H1")[0].innerText || " ",
+					iframe : "NA",
+					description : document.getElementsByClassName("story_desription")[0].innerText || " ",
+					imageURL : thumb
+				};
+			});
+
+		}
+		await browser.close();
+
+
+		callback({
+			fulltitle : url.title,
+			url :url.downloadURL,
+			_filename : data.fileName,
+			thumbnail : url.imageURL,
+			webpage_url : data.url
+		});
+
+	})();
+
+}
+
+
+
+
+
+}
+
+functions.downloadVideo = function(data, callback){
 
 	/* 
 	 * Function to downloadVideo to server 
@@ -248,10 +309,10 @@ functions.convert = function(data, callback){
 	 		console.log(error);
 	 	} else {
 	 		var json = JSON.parse(response.body.toString());
-	  		callback({
-	  			id : json.id,
-	  			url : json.source_url
-	  		});
+	 		callback({
+	 			id : json.id,
+	 			url : json.source_url
+	 		});
 	 	}
 	 });
 	};

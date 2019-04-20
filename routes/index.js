@@ -349,8 +349,23 @@ router.post('/updateWordpress', function(req, res, next) {
 
 });
 
-router.post('/addtoCrawlerQueue', function(req, res, next) {
 
+router.post('/addtoCrawlerQueue', function(req, res, next) {
+	var fileName = "";
+
+	if(req.body.videoUrl[req.body.videoUrl.length-1] == "/"){ //strip last / character
+		req.body.videoUrl = req.body.videoUrl.replace(/.$/,"");
+	}
+
+	if(config.crawlers[0].name == req.body.crawler){ //p crawler
+		fileName = req.body.videoUrl.split("key=")[1];
+	}else if(config.crawlers[1].name == req.body.crawler){ //x crawler
+		var tmp = req.body.videoUrl.split("/");
+		fileName = "xv_"+tmp[tmp.length-1];
+	}else if(config.crawlers[2].name == req.body.crawler){ //365 crawler
+		var tmp = req.body.videoUrl.split("/");
+		fileName = "po_"+tmp[tmp.length-1];
+	}
 
 	CrawlerQueue
 	.create({
@@ -363,7 +378,7 @@ router.post('/addtoCrawlerQueue', function(req, res, next) {
 		addedTime : new Date().toString(),
 		completedTime : " ",
 		status : "Pending",
-		fileName : req.body.fileName
+		fileName : fileName
 	})
 	.then(function(err, data) {
 		if (err) {
@@ -605,11 +620,17 @@ router.get('/initQueue', function(req, res, next) {
 
 function crawlWebsite(core, res){
 	functions.crawlWebsite({
-		url : core.queue.url
+		url : core.queue.url,
+		type : 'youtube-dl',
+		proxyIp : "", 
+		proxyPort : "",
+		fileName : core.queue.fileName,
+		useProxy : false
 	}, function(data){
 
 		core.crawled = data;
 		generateTitle(core,res);
+
 	});
 }
 
@@ -624,7 +645,6 @@ function generateTitle(core,res){
 		if(core.wordpress.languageConversion){
 			convert(core,res);
 		}else{
-			//res.json(core);
 			downloadVideo(core,res);
 		}
 
