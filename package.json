@@ -21,6 +21,7 @@
     "multer": "^1.4.1",
     "mysql": "^2.16.0",
     "mysql2": "^1.6.5",
+    "proxy-verifier": "^0.4.0",
     "puppeteer": "^1.14.0",
     "request-progress": "^3.0.0",
     "sequelize": "^5.2.7"

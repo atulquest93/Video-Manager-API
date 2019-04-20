@@ -7,6 +7,7 @@ const  Storage  = require('@google-cloud/storage');
 
 const Sequelize = require('sequelize');
 const config = require("./../config/config.json");
+
 const sequelize = new Sequelize(config.dbName, config.userName, config.password , {
 	host: config.host,
 	dialect: 'mysql',
@@ -434,6 +435,35 @@ router.get('/getAutoPosts', function(req, res, next) {
 
 });
 
+router.post('/saveProxy', function(req, res, next) {
+
+	var proxy = req.body;
+
+	fs.writeFile("./config/proxy.json", JSON.stringify(proxy), 'utf8', function(obj){
+		res.json({message: "Proxy Updated", data : proxy});
+	});
+
+});
+
+router.post('/checkProxy', function(req, res, next) {
+
+	var ProxyVerifier = require('proxy-verifier');
+	var prx = req.body.proxyDetails.split(":");
+	var proxy = {
+		ipAddress: prx[0],
+		port: parseInt(prx[1]),
+		protocol: req.body.proxyType
+	};
+
+	ProxyVerifier.testAll(proxy, function(error, result) {
+
+		if (error) {
+			res.json({status : "Error"});
+		} else {
+			res.json(result);
+		}
+	});
+});
 
 router.get('/getStorageFiles', function(req, res, next) {
 
@@ -621,16 +651,10 @@ router.get('/initQueue', function(req, res, next) {
 function crawlWebsite(core, res){
 	functions.crawlWebsite({
 		url : core.queue.url,
-		type : 'youtube-dl',
-		proxyIp : "", 
-		proxyPort : "",
-		fileName : core.queue.fileName,
-		useProxy : false
+		type : core.queue.type
 	}, function(data){
-
 		core.crawled = data;
 		generateTitle(core,res);
-
 	});
 }
 
@@ -689,9 +713,6 @@ function downloadVideo(core,res){
 function downloadImage(core,res){
 	var fileName = core.crawled.thumbnail.split("/")[core.crawled.thumbnail.split("/").length-1]
 	functions.downloadImage({
-		proxyType : 'https',
-		ip : '112.133.218.197',
-		port : '8080',
 		imageURL : core.crawled.thumbnail,
 		fileName : core.queue.fileName+".jpg"
 	},function(data){

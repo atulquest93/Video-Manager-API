@@ -10,6 +10,8 @@ var server = "http://206.189.225.246";
 
 var coreObj = null;
 
+const proxyObj = require("./../../config/proxy.json");
+
 functions.convert = function(data, callback){
 
 	/* 
@@ -77,7 +79,7 @@ functions.convert = function(data, callback){
 
 	/* 
 	 * Function to crawl website to generate Image , Video URL, Title.
-	 * @Params { url : 'http://www.google.com', proxyIp, proxyPort , fileName, type, useProxy }
+	 * @Params { url : 'http://www.google.com', type, useProxy }
 	 *
 	 */
 
@@ -98,9 +100,11 @@ functions.convert = function(data, callback){
 	 }else if(data.type == "chrome"){
 
 	 	const puppeteer = require('puppeteer');
+
+	 	var tmp = proxyObj.proxyDetails.split(":");
 	 	var proxy = "" ;
 	 	if(data.useProxy){
-	 		proxy = "--proxy-server="+data.proxyIp+":"+data.proxyPort;
+	 		proxy = "--proxy-server="+tmp[0]+":"+tmp[1];
 	 	}
 	 	
 
@@ -122,7 +126,7 @@ functions.convert = function(data, callback){
 	 				request.continue();
 	 		});
 
-	 		
+
 
 	 		url = await page.evaluate(() => {
 
@@ -135,14 +139,14 @@ functions.convert = function(data, callback){
 	 			};
 	 		});
 
-	 		
+
 	 		await browser.close();
 
 
 	 		callback({
 	 			fulltitle : url.title,
 	 			url :url.downloadURL,
-	 			_filename : data.fileName,
+	 			_filename : "",
 	 			thumbnail : url.imageURL,
 	 			webpage_url : data.url
 	 		});
@@ -191,10 +195,12 @@ functions.convert = function(data, callback){
 
 	/* 
 	 * Function to download Image to Server.
-	 * @Params { proxyType : 'http', ip, port, imageURL, fileName  }
+	 * @Params { imageURL, fileName  }
 	 */
 
-	 var proxyUrl = data.proxyType+"://"+ data.ip + ":" + data.port;
+	 var tmp = proxyObj.proxyDetails.split(":");
+
+	 var proxyUrl = proxyObj.proxyType+"://"+ tmp[0] + ":" + tmp[1];
 
 	 var proxiedRequest = request.defaults({
 	 	'proxy': proxyUrl
