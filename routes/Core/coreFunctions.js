@@ -56,7 +56,7 @@ functions.convert = function(data, callback){
 	 	var title = "";
 	 	var desc = "";
 
-	 	for (var i = 100; i >= 0; i--) {
+	 	for (var i = 10; i >= 0; i--) {
 	 		title += dataArray[~~(dataArray.length * Math.random())]+" ";
 	 	}
 
@@ -82,8 +82,11 @@ functions.convert = function(data, callback){
 	 * @Params { url : 'http://www.google.com', type, useProxy }
 	 *
 	 */
+	 console.log("Core Crawler");
+	 console.log(data);
 
 	 if(data.type == "youtube-dl"){
+	 	console.log("Using youtubedl");
 	 	var url = data.url;
 	 	var options = ['--username=xxx', '--password=xxx'];
 	 	youtubedl.getInfo(url, options, function(err, info) {
@@ -99,6 +102,8 @@ functions.convert = function(data, callback){
 	 	
 	 }else if(data.type == "chrome"){
 
+	 	console.log("Using Chrome");
+
 	 	const puppeteer = require('puppeteer');
 
 	 	var tmp = proxyObj.proxyDetails.split(":");
@@ -107,6 +112,7 @@ functions.convert = function(data, callback){
 	 		proxy = "--proxy-server="+tmp[0]+":"+tmp[1];
 	 	}
 	 	
+	 	console.log(proxy);
 
 	 	(async () => {
 	 		
@@ -169,25 +175,30 @@ functions.convert = function(data, callback){
 	 * This will trigger callback as soon download Starts. Keep checking fileName.json file for status.
 	 */
 
-	 progress(request(data.videoURL), {
-	 })
-	 .on('progress', function (state) {
-	 	console.log('progress', state);
-	 	state.status = "progress"
-	 	fs.writeFile('./download/'+data.fileName+".json", JSON.stringify(state), 'utf8', function(){});
-	 })
-	 .on('error', function (err) {
-	 	fs.writeFile('./download/'+data.fileName+".json", JSON.stringify({status : "Error"}), 'utf8', function(){});
-	 })
-	 .on('end', function (state) {
-	 	fs.writeFile('./download/'+data.fileName+".json", JSON.stringify({status : "End"}), 'utf8', function(){});
-	 	callback({
-	 		status : "success", 
-	 		type: "downloadCompleted",
-	 		fileName : data.fileName
-	 	}); 
-	 })
-	 .pipe(fs.createWriteStream('./download/'+data.fileName));
+
+	const os = require('os');
+ 
+	const MultipartDownload = require('multipart-download');
+	 
+	new MultipartDownload()
+	  .start(data.videoURL, {
+	    numOfConnections: 5,
+	    saveDirectory: './download',
+	    fileName: data.fileName
+	  })
+	  .on('error', (err) => {
+	    // handle error here
+	  })
+	  .on('data', (data, offset) => {
+	  	console.log("Downloaded  : "+(offset/1024/1024) +" Mb");
+	  })
+	  .on('end', (output) => {
+	   callback({
+	  		status : "success", 
+	  		type: "downloadCompleted",
+	  		fileName : data.fileName
+	  	}); 
+	  });
 
 	};
 

@@ -105,7 +105,8 @@ const Crawlers = sequelize.define('Crawlers', {
 	},
 	name: Sequelize.STRING,
 	isEmbedable: Sequelize.BOOLEAN,
-	websiteUrl: Sequelize.STRING
+	websiteUrl: Sequelize.STRING,
+	type : Sequelize.STRING
 }, {
 	tableName: 'crawlers',
 	timestamps: false
@@ -354,15 +355,11 @@ router.post('/updateWordpress', function(req, res, next) {
 router.post('/addtoCrawlerQueue', function(req, res, next) {
 	var fileName = "";
 
-	if(req.body.videoUrl[req.body.videoUrl.length-1] == "/"){ //strip last / character
-		req.body.videoUrl = req.body.videoUrl.replace(/.$/,"");
-	}
-
 	if(config.crawlers[0].name == req.body.crawler){ //p crawler
 		fileName = req.body.videoUrl.split("key=")[1];
 	}else if(config.crawlers[1].name == req.body.crawler){ //x crawler
 		var tmp = req.body.videoUrl.split("/");
-		fileName = "xv_"+tmp[tmp.length-1];
+		fileName = "xv_"+tmp[tmp.length-2];
 	}else if(config.crawlers[2].name == req.body.crawler){ //365 crawler
 		var tmp = req.body.videoUrl.split("/");
 		fileName = "po_"+tmp[tmp.length-1];
@@ -591,6 +588,40 @@ router.get('/refreshStorageFiles', function(req, res, next) {
 	
 });
 
+router.get('/getSignedURL', function(req, res, next) {
+
+	console.log("Hit");
+	const options = {
+		prefix: "",
+	};
+
+	var file = req.query.file;
+
+	GoogleAccounts.findOne({
+		where : {
+			id : req.query.bucket
+		}
+	}).then(function(str, error){	
+		 console.log(str.fileName);
+		 var storage = Storage({keyFilename: "./config/"+str.fileName});
+
+		 var date = new Date();
+		 date.setDate(date.getDate() + 1);
+		 storage
+		 .bucket(str.bucketName)
+		 .file(file).getSignedUrl({
+		 	action: 'read',
+		 	expires: Date.now()+ 6000000
+		 }).then(results => {
+		 	res.json(results[0]);
+		 })
+		 .catch(err => {
+		 	console.error('ERROR:', err);
+		 });
+	});
+
+});
+
 
 router.get('/initQueue', function(req, res, next) {
 
@@ -604,7 +635,7 @@ router.get('/initQueue', function(req, res, next) {
 		}
 	})
 	.then(function(data,err) {
-
+		console.log(data);
 		if(data.fileName.length == 0){
 
 			CrawlerQueue
@@ -633,10 +664,22 @@ router.get('/initQueue', function(req, res, next) {
 					where : {
 						name : core.queue.storage
 					}
-				}).then(function(storage, error){
+				}).then(function(storage, error){	
 
-					core.storage = storage;
-					crawlWebsite(core, res);
+
+					Crawlers.findOne({
+						where : {
+							name : core.queue.crawler
+						}
+					}).then(function(crawl, error){
+
+						core.storage = storage;
+						core.crawl = crawl;
+						crawlWebsite(core, res);
+
+					});
+
+					
 
 				});
 
@@ -649,9 +692,14 @@ router.get('/initQueue', function(req, res, next) {
 
 
 function crawlWebsite(core, res){
+	console.log("Crawling Website");
+	console.log({
+		url : core.queue.url,
+		type : core.crawl.type
+	});
 	functions.crawlWebsite({
 		url : core.queue.url,
-		type : core.queue.type
+		type : core.crawl.type
 	}, function(data){
 		core.crawled = data;
 		generateTitle(core,res);
@@ -659,6 +707,7 @@ function crawlWebsite(core, res){
 }
 
 function generateTitle(core,res){
+	console.log("Generating Title");
 	functions.generateTitle({
 		titleFile : core.wordpress.titleFile,
 		descFile : core.wordpress.descFile,
@@ -676,7 +725,7 @@ function generateTitle(core,res){
 }
 
 function convert(core,res){
-
+	console.log("Converting Title");
 	functions.convert({
 		source : 'en',
 		target : 'hi',
@@ -699,7 +748,7 @@ function convert(core,res){
 };
 
 function downloadVideo(core,res){
-
+	console.log("Downloading Video");
 	functions.downloadVideo({
 		videoURL : core.crawled.url,
 		fileName : core.queue.fileName+".mp4"
@@ -711,6 +760,7 @@ function downloadVideo(core,res){
 }
 
 function downloadImage(core,res){
+	console.log("DOwnloading Image");
 	var fileName = core.crawled.thumbnail.split("/")[core.crawled.thumbnail.split("/").length-1]
 	functions.downloadImage({
 		imageURL : core.crawled.thumbnail,
@@ -724,7 +774,7 @@ function downloadImage(core,res){
 
 
 function uploadVideo(core,res){
-
+	console.log("UPloading Video");
 	functions.uploadToStorage({
 		key : core.storage.fileName,
 		bucketName : core.storage.bucketName,
@@ -738,6 +788,7 @@ function uploadVideo(core,res){
 };
 
 function uploadImage(core,res){
+	console.log("Uploading Images");
 	functions.uploadToStorage({
 		key : core.storage.fileName,
 		bucketName : core.storage.bucketName,
@@ -750,6 +801,7 @@ function uploadImage(core,res){
 };
 
 function wpUploadImage(core,res){
+	console.log("Wp Posting Image");
 	functions.wpUploadImage({
 		fileName: core.imageDownload.fileName,
 		api : core.wordpress.api,
@@ -761,6 +813,7 @@ function wpUploadImage(core,res){
 }
 
 function wpCreatePost(core,res){
+	console.log("Wp Creating Post");
 	functions.wpCreatePost({
 		tags : core.wordpress.tags,
 		categories : core.wordpress.categories,
@@ -779,6 +832,7 @@ function wpCreatePost(core,res){
 };
 
 function wpCreateEmbed(core,res){
+	console.log("WP Creating Embed");
 	functions.wpCreateEmbed({
 		meta : core.wordpress.meta,
 		api : core.wordpress.api,
@@ -786,10 +840,9 @@ function wpCreateEmbed(core,res){
 		postId : core.wpCreatePost.id,
 		gcId : core.storage.id,
 		videoFileName : core.uploadVideo.fileName,
-		baseDomain : "http://foo.bar"
+		baseDomain : config.playerDomain
 	}, function(data){
 		core.wpCreateEmbed = data;
-
 
 		Posts
 		.create({
@@ -823,7 +876,7 @@ function wpCreateEmbed(core,res){
 };
 
 var cron = require('cron');
-var postJob = cron.job("*/10 * * * *", function(){
+var postJob = cron.job("*/5 * * * *", function(){
 	console.log('Starting Cron Execution');
 	var server = "http://127.0.0.1:3001";
 	request({
